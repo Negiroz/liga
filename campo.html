@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liga SIGMA - Agentes de Campo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f4f9; }
+        .header-font { font-family: 'Oswald', sans-serif; }
+        .nav-button { transition: all 0.3s ease; }
+        .nav-button.active { background-color: #fbbf24; color: #1f2937; font-weight: bold; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #2563eb; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .compact-table th, .compact-table td { padding: 0.5rem 0.4rem; font-size: 0.8rem; }
+        .compact-table th { white-space: normal; line-height: 1.2; }
+        .summary-table th, .summary-table td { padding: 0.4rem 0.5rem; font-size: 0.85rem; }
+        .points-cell { color: #1d4ed8; font-weight: bold; }
+        .data-entry-table input, .edit-table input { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #4b5563; background-color: #374151; color: #e5e7eb; text-align: center; }
+        .edit-table input { background-color: #e5e7eb; color: #1f2937; }
+        .data-entry-table input:focus, .edit-table input:focus { outline: none; ring: 2px; border-color: #fbbf24; }
+        .agent-photo { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
+        .roster-photo { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+        .analysis-card { background-color: #ffffff; border: 1px solid #e5e7eb; border-left: 5px solid #2563eb; }
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 40; display: flex; justify-content: center; align-items: center; }
+        .modal-content { z-index: 50; }
+        .mobile-card-photo { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 3px solid #fbbf24; }
+        .info-icon, .versus-icon { cursor: pointer; display: inline-block; margin-left: 4px; width: 16px; height: 16px; line-height: 16px; text-align: center; font-style: normal; }
+        .info-icon { background-color: #9ca3af; color: white; border-radius: 50%; font-size: 10px; }
+        .versus-icon { font-size: 14px; }
+        .versus-card-photo { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 4px solid #fbbf24; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="app" class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-6 relative">
+            <a href="portal.html" class="absolute left-0 top-1/2 -translate-y-1/2 bg-gray-200 text-gray-700 hover:bg-gray-300 font-semibold py-2 px-4 rounded-lg transition-colors">
+                &larr; Volver al Portal
+            </a>
+            <h1 class="text-5xl md:text-6xl font-bold text-blue-800 header-font">LIGA SIGMA DE CAMPEONES</h1>
+            <p class="text-gray-600 text-xl header-font flex items-center justify-center">
+                Rendimiento de <span class="font-bold text-blue-700 mx-2">Agentes de Campo</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 ml-2 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0L6.343 16.657a6 6 0 118.485-8.485l.707.707zm-4.243-4.243l1.414-1.414L10 9.586 8.586 11l1.414 1.414 2.828-2.828z" /></svg>
+            </p>
+        </header>
+
+        <nav class="flex justify-center mb-8 bg-gray-200 rounded-lg p-1 shadow">
+            <button id="nav-standings-campo" class="nav-button active w-1/6 p-3 rounded-md">Posiciones</button>
+            <button id="nav-versus-campo" class="nav-button w-1/6 p-3 rounded-md">Versus</button>
+            <button id="nav-data-entry-campo" class="nav-button w-1/6 p-3 rounded-md">Carga</button>
+            <button id="nav-edit-entries-campo" class="nav-button w-1/6 p-3 rounded-md">Editar</button>
+            <button id="nav-roster-campo" class="nav-button w-1/6 p-3 rounded-md">Roster</button>
+            <button id="nav-mobile-campo" class="nav-button w-1/6 p-3 rounded-md">Ranking</button>
+        </nav>
+        
+        <main>
+            <div id="standings-view-campo">
+                <section class="bg-white p-6 rounded-lg shadow-lg">
+                     <div class="flex flex-wrap justify-between items-center mb-4 border-b border-gray-200 pb-3">
+                         <h2 class="text-3xl font-bold text-gray-800 header-font">Standings del Mes</h2>
+                         <div class="flex items-center space-x-4">
+                            <div class="text-sm">
+                                <span class="font-semibold">Meta Prospectos:</span>
+                                <span id="meta-prospectos-display" class="font-bold text-blue-700">--</span>
+                            </div>
+                            <div class="text-sm">
+                                <span class="font-semibold">Meta Cierres:</span>
+                                <span id="meta-cierres-display" class="font-bold text-blue-700">--</span>
+                            </div>
+                            <div class="text-sm">
+                                <span class="font-semibold">Ref. Plan Caro ($):</span>
+                                <span id="ref-plan-caro-display" class="font-bold text-blue-700">--</span>
+                            </div>
+                            <div>
+                                <label for="month-filter-campo" class="text-sm mr-2 font-semibold">Mes:</label>
+                                <input type="month" id="month-filter-campo" class="bg-gray-200 p-2 rounded border border-gray-300">
+                            </div>
+                         </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table id="standings-table-campo" class="w-full text-left compact-table">
+                            <thead class="bg-gray-700 text-white uppercase text-xs header-font">
+                                <tr>
+                                    <th class="p-2">Pos.</th>
+                                    <th class="p-2">Agente</th>
+                                    <th class="p-2 text-center">Prospectos<i class="info-icon" data-kpi="prospectos">?</i></th>
+                                    <th class="p-2 text-center">Oportunidades<i class="info-icon" data-kpi="oportunidades">?</i></th>
+                                    <th class="p-2 text-center">Tasa Conversión<i class="info-icon" data-kpi="tasa_conversion">?</i></th>
+                                    <th class="p-2 text-center">ARPU<i class="info-icon" data-kpi="arpu">?</i></th>
+                                    <th class="p-2 text-center">Act. Completadas<i class="info-icon" data-kpi="actividades">?</i></th>
+                                    <th class="p-2 text-center font-bold">Puntos Total<i class="info-icon" data-kpi="puntos_total_summary">?</i></th>
+                                </tr>
+                            </thead>
+                            <tbody id="standings-body-campo"></tbody>
+                        </table>
+                        <div id="standings-loader-campo" class="flex justify-center p-8"><div class="loader"></div></div>
+                    </div>
+                     <div class="mt-6 text-right">
+                        <button id="export-csv-btn-campo" class="bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700">Exportar a CSV</button>
+                    </div>
+                </section>
+                <section id="analysis-section-campo" class="mt-8">
+                    <div class="text-center mb-6">
+                         <button id="generate-analysis-btn-campo" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full hover:bg-blue-700 transition-colors text-lg header-font shadow-lg">
+                            Generar Análisis Táctico
+                        </button>
+                    </div>
+                    <div id="analysis-loader-campo" class="hidden justify-center p-8"><div class="loader"></div></div>
+                    <div id="analysis-container-campo" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                 </section>
+            </div>
+
+            <div id="versus-view-campo" class="hidden">
+                 <section class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex flex-wrap justify-between items-center mb-4 border-b border-gray-200 pb-3">
+                        <h2 class="text-3xl font-bold text-gray-800 header-font">Panel de Enfrentamientos</h2>
+                        <div>
+                            <label for="entry-date-versus-campo" class="text-sm mr-2 font-semibold">Fecha:</label>
+                            <input type="date" id="entry-date-versus-campo" class="bg-gray-200 p-2 rounded border border-gray-300" required>
+                        </div>
+                    </div>
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-xl font-bold header-font text-gray-800 mb-4">Enfrentamientos Activos del Día</h3>
+                            <div id="active-versus-container-campo" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold header-font text-gray-800 mb-4 mt-6">Enfrentamientos Terminados del Día</h3>
+                            <div id="last-finished-versus-container-campo" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+                        </div>
+                        <div class="border-t pt-6">
+                            <h3 class="text-xl font-bold header-font text-gray-800 mb-4">Sorteo de Nuevo Enfrentamiento</h3>
+                            <div>
+                                <p class="text-gray-600 mb-2">Marcar agentes que <strong>NO</strong> están disponibles para el sorteo:</p>
+                                <div id="versus-availability-container-campo" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 border p-3 rounded-md bg-gray-50"></div>
+                            </div>
+                            <button id="generate-versus-btn-campo" class="w-full mt-4 bg-blue-600 text-white font-bold py-3 rounded-md hover:bg-blue-700 transition-colors text-lg header-font">Realizar Sorteo y Generar</button>
+                        </div>
+                        
+                        <div class="border-t pt-6">
+                            <h3 class="text-xl font-bold header-font text-gray-800 mb-4">Resumen de Versus del Mes</h3>
+                             <div class="overflow-x-auto">
+                                <table class="w-full text-left summary-table">
+                                    <thead class="bg-gray-700 text-white uppercase text-xs header-font">
+                                        <tr>
+                                            <th class="p-2">Agente</th>
+                                            <th class="p-2 text-center">Jugados</th>
+                                            <th class="p-2 text-center">Ganados</th>
+                                            <th class="p-2 text-center">Perdidos</th>
+                                            <th class="p-2 text-center font-bold">Efectividad %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="versus-summary-body-campo"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="border-t pt-6">
+                            <h3 class="text-xl font-bold header-font text-gray-800 mb-4">Historial de Enfrentamientos del Mes</h3>
+                            <div id="versus-history-container-campo" class="space-y-2 max-h-96 overflow-y-auto pr-2"></div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div id="data-entry-view-campo" class="hidden">
+                 <section class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex flex-wrap justify-between items-center mb-4 border-b border-gray-200 pb-3">
+                        <h2 class="text-3xl font-bold text-gray-800 header-font">Carga de Jugadas</h2>
+                         <div>
+                            <label for="entry-date-campo" class="text-sm mr-2 font-semibold">Fecha:</label>
+                            <input type="date" id="entry-date-campo" class="bg-gray-200 p-2 rounded border border-gray-300" required>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-700 text-white uppercase text-sm header-font">
+                                <tr>
+                                    <th class="p-3 min-w-[200px]">Agente</th>
+                                    <th class="p-3 text-center">Prospectos Cualificados</th>
+                                    <th class="p-3 text-center">Oportunidades Convertidas</th>
+                                    <th class="p-3 text-center">ARPU Prospectos ($)</th>
+                                    <th class="p-3 text-center">Act. Asignadas</th>
+                                    <th class="p-3 text-center">Act. Completadas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-entry-table-body-campo"></tbody>
+                        </table>
+                        <div id="data-entry-loader-campo" class="hidden justify-center p-8"></div>
+                    </div>
+                     <button id="save-all-btn-campo" class="w-full mt-6 bg-green-600 text-white font-bold py-3 rounded-md hover:bg-green-700 transition-colors text-lg header-font">GUARDAR TODAS LAS JUGADAS</button>
+                </section>
+            </div>
+            <div id="roster-view-campo" class="hidden">
+                <section class="bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto">
+                    <h2 class="text-2xl font-bold mb-4 border-b border-gray-200 pb-2 header-font">Roster de Agentes de Campo</h2>
+                    <div class="space-y-3 mb-4" id="agentes-list-campo"></div>
+                    <div class="space-y-3 border-t pt-4 mt-4">
+                        <h3 class="text-xl header-font font-semibold">Añadir Nuevo Agente</h3>
+                        <input type="text" id="new-agente-name-campo" placeholder="Nombre del nuevo Agente" class="w-full bg-gray-200 text-gray-800 p-2 rounded-md border border-gray-300">
+                        <input type="file" id="new-agente-photo-campo" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        <button id="add-agente-btn-campo" class="w-full bg-amber-400 text-gray-900 font-bold px-4 py-3 rounded-md hover:bg-amber-500">Añadir al Roster</button>
+                    </div>
+                </section>
+            </div>
+            <div id="edit-view-campo" class="hidden">
+                 <section class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex flex-wrap justify-between items-center mb-4 border-b border-gray-200 pb-3">
+                        <h2 class="text-3xl font-bold text-gray-800 header-font">Editar Jugadas del Mes</h2>
+                        <div class="flex items-center space-x-4">
+                            <div>
+                                <label for="edit-agent-filter-campo" class="text-sm mr-2 font-semibold">Agente:</label>
+                                <select id="edit-agent-filter-campo" class="bg-gray-200 p-2 rounded border border-gray-300"></select>
+                            </div>
+                            <div>
+                                <label for="edit-date-filter-campo" class="text-sm mr-2 font-semibold">Fecha:</label>
+                                <input type="date" id="edit-date-filter-campo" class="bg-gray-200 p-2 rounded border border-gray-300">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button id="search-edit-btn-campo" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-md hover:bg-blue-700">Buscar Jugadas</button>
+                    </div>
+                    <div class="overflow-x-auto mt-4">
+                        <table class="w-full text-left compact-table edit-table">
+                             <thead class="bg-gray-700 text-white uppercase text-xs header-font">
+                                <tr>
+                                    <th class="p-2">Agente</th>
+                                    <th class="p-2">Fecha</th>
+                                    <th class="p-2 text-center">Prospectos Cualificados</th>
+                                    <th class="p-2 text-center">Oportunidades Convertidas</th>
+                                    <th class="p-2 text-center">ARPU Prospectos ($)</th>
+                                    <th class="p-2 text-center">Act. Asignadas</th>
+                                    <th class="p-2 text-center">Act. Completadas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="edit-entries-body-campo"></tbody>
+                        </table>
+                        <div id="edit-loader-campo" class="hidden justify-center p-8"><div class="loader"></div></div>
+                    </div>
+                    <button id="save-updates-btn-campo" class="w-full mt-6 bg-purple-600 text-white font-bold py-3 rounded-md hover:bg-purple-700 transition-colors text-lg header-font">GUARDAR TODOS LOS CAMBIOS</button>
+                </section>
+            </div>
+             <div id="mobile-view-campo" class="hidden">
+                 <section class="bg-white p-4 md:p-6 rounded-lg shadow-lg">
+                    <div class="text-center">
+                        <h2 class="text-3xl font-bold text-gray-800 header-font">Ranking de Puntos</h2>
+                        <h3 id="mobile-month-display-campo" class="text-center text-gray-500 mb-6"></h3>
+                    </div>
+                    <div id="mobile-standings-container-campo" class="space-y-4"></div>
+                    <div id="mobile-loader-campo" class="hidden justify-center p-8"><div class="loader"></div></div>
+                    <div id="kpi-leaders-section-campo" class="mt-8 pt-6 border-t">
+                         <h2 class="text-2xl font-bold text-gray-800 header-font text-center mb-4">Líderes del Mes por KPI</h2>
+                         <div id="kpi-leaders-container-campo" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                         </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    <div id="notification-modal-campo" class="modal-backdrop hidden">
+        <div class="modal-content bg-white text-gray-900 rounded-lg shadow-xl p-8 w-11/12 md:w-1/3 text-center">
+            <p id="notification-message-campo" class="mb-6"></p>
+            <button id="close-notification-btn-campo" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">Entendido</button>
+        </div>
+    </div>
+    <div id="explanation-modal-campo" class="modal-backdrop hidden">
+        <div class="modal-content bg-white text-gray-900 rounded-lg shadow-xl p-6 w-11/12 md:w-1/3">
+            <h3 id="explanation-title-campo" class="text-xl font-bold mb-4 header-font"></h3>
+            <p id="explanation-text-campo" class="text-gray-700 mb-6 whitespace-pre-wrap"></p>
+            <button id="close-explanation-btn-campo" class="w-full bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">Cerrar</button>
+        </div>
+    </div>
+    <div id="delete-versus-modal-campo" class="modal-backdrop hidden">
+        <div class="modal-content bg-white text-gray-900 rounded-lg shadow-xl p-8 w-11/12 md:w-1/3">
+            <h3 class="text-2xl font-bold header-font mb-4">Confirmar Eliminación</h3>
+            <p class="text-lg text-gray-600 mb-4">Para eliminar este enfrentamiento, ingresa la contraseña de administrador.</p>
+            <div class="mb-6">
+                <input type="password" id="admin-password-input-campo" class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="Contraseña de admin">
+            </div>
+            <div class="flex justify-end space-x-4">
+                 <button type="button" id="cancel-delete-btn-campo" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">Cancelar</button>
+                 <button type="button" id="confirm-delete-btn-campo" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Eliminar Versus</button>
+            </div>
+        </div>
+    </div>
+    <div id="versus-detail-modal-campo" class="modal-backdrop hidden">
+        <div class="modal-content bg-white text-gray-900 rounded-lg shadow-xl p-6 w-11/12 md:w-2/5">
+            <div id="versus-detail-content-campo"></div>
+            <button type="button" id="close-versus-detail-btn-campo" class="w-full mt-4 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">Cerrar</button>
+        </div>
+    </div>
+    <div id="edit-agent-modal-campo" class="modal-backdrop hidden">
+        <div class="modal-content bg-white text-gray-900 rounded-lg shadow-xl p-8 w-11/12 md:w-1/3">
+            <h3 class="text-2xl font-bold header-font mb-4">Editar Agente</h3>
+            <form id="edit-agent-form-campo" class="space-y-4">
+                <input type="hidden" id="edit-agent-id-campo">
+                <div>
+                    <label for="edit-agent-name-campo" class="block font-semibold">Nombre del Agente:</label>
+                    <input type="text" id="edit-agent-name-campo" class="w-full bg-gray-200 p-2 rounded border border-gray-300" required>
+                </div>
+                <div>
+                    <label class="block font-semibold">Foto Actual:</label>
+                    <img id="edit-agent-current-photo-campo" class="h-24 w-24 rounded-full object-cover my-2">
+                </div>
+                <div>
+                    <label for="edit-agent-photo-campo" class="block font-semibold">Nueva Foto (opcional):</label>
+                    <input type="file" id="edit-agent-photo-campo" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                </div>
+                <div class="flex justify-end space-x-4 pt-4">
+                     <button type="button" id="cancel-edit-agent-btn-campo" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">Cancelar</button>
+                     <button type="submit" id="save-edit-agent-btn-campo" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script src="js/campo.js?v=1.1"></script>
+</body>
+</html>

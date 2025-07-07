@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Gerencial - Liga SIGMA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f4f9; }
+        .header-font { font-family: 'Oswald', sans-serif; }
+        .performer-photo { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 4px solid; }
+        .gold { border-color: #ffd700; }
+        .silver { border-color: #c0c0c0; }
+        .bronze { border-color: #cd7f32; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <div id="dashboard-app" class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-10 relative">
+            <a href="portal.html" class="absolute left-0 top-1/2 -translate-y-1/2 bg-gray-200 text-gray-700 hover:bg-gray-300 font-semibold py-2 px-4 rounded-lg transition-colors">
+                &larr; Volver al Portal
+            </a>
+            <h1 class="text-5xl font-bold text-blue-800 header-font">Dashboard Gerencial</h1>
+        </header>
+
+        <div class="mb-6 flex justify-end">
+            <div>
+                <label for="month-filter-dashboard" class="text-sm mr-2 font-semibold">Mes:</label>
+                <input type="month" id="month-filter-dashboard" class="bg-white p-2 rounded border border-gray-300">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-8">
+                <section class="bg-white p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold header-font mb-4">Puntaje Promedio por Área</h2>
+                    <canvas id="performanceChart"></canvas>
+                </section>
+            </div>
+
+            <div class="space-y-8">
+                <section class="bg-white p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold header-font mb-4">Top 5 Performers del Mes</h2>
+                    <div id="top-performers-container" class="space-y-4">
+                        </div>
+                </section>
+                <section class="bg-white p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold header-font mb-4 text-red-600">Alertas de Rendimiento</h2>
+                     <div id="low-performers-container" class="space-y-3">
+                        </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const monthFilter = document.getElementById('month-filter-dashboard');
+            const topPerformersContainer = document.getElementById('top-performers-container');
+            const lowPerformersContainer = document.getElementById('low-performers-container');
+            const performanceChartCtx = document.getElementById('performanceChart').getContext('2d');
+            let performanceChart;
+            const placeholderPhoto = `https://placehold.co/60x60/64748b/ffffff?text=`;
+
+            async function fetchDataAndRender() {
+                const month = monthFilter.value;
+                if (!month) return;
+
+                try {
+                    const response = await fetch(`api/dashboard_data.php?month=${month}`);
+                    if (!response.ok) throw new Error('Error al cargar los datos del dashboard.');
+                    
+                    const data = await response.json();
+
+                    renderPerformanceChart(data.areaPerformance);
+                    renderTopPerformers(data.topPerformers);
+                    renderLowPerformers(data.lowPerformers);
+
+                } catch (error) {
+                    console.error("Error fetching dashboard data:", error);
+                    topPerformersContainer.innerHTML = `<p class="text-red-500">${error.message}</p>`;
+                }
+            }
+
+            function renderPerformanceChart(areaData) {
+                if (performanceChart) {
+                    performanceChart.destroy();
+                }
+                performanceChart = new Chart(performanceChartCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(areaData),
+                        datasets: [{
+                            label: 'Puntaje Promedio',
+                            data: Object.values(areaData),
+                            backgroundColor: [
+                                'rgba(54, 162, 235, 0.6)',
+                                'rgba(255, 206, 86, 0.6)',
+                                'rgba(75, 192, 192, 0.6)',
+                            ],
+                            borderColor: [
+                                'rgba(54, 162, 235, 1)',
+                                'rgba(255, 206, 86, 1)',
+                                'rgba(75, 192, 192, 1)',
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: { beginAtZero: true }
+                        },
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+
+            function renderTopPerformers(performers) {
+                topPerformersContainer.innerHTML = '';
+                if(performers.length === 0){
+                    topPerformersContainer.innerHTML = '<p class="text-gray-500">No hay datos de rendimiento este mes.</p>';
+                    return;
+                }
+                
+                const podiumClasses = ['gold', 'silver', 'bronze'];
+                performers.forEach((p, index) => {
+                    const rank = index + 1;
+                    const colorClass = podiumClasses[index] || 'gray-400';
+                    const photoInitial = p.area ? p.area.charAt(0).toUpperCase() : 'P';
+                    
+                    const performerEl = document.createElement('div');
+                    performerEl.className = 'flex items-center space-x-4 p-2 rounded';
+                    performerEl.innerHTML = `
+                        <span class="text-2xl font-bold w-8 text-center header-font">${rank}</span>
+                        <img src="${p.photoUrl || (placeholderPhoto + photoInitial)}" alt="${p.name}" class="performer-photo ${colorClass}">
+                        <div>
+                            <p class="font-bold text-lg">${p.name}</p>
+                            <p class="text-sm text-gray-500">${p.area} - ${p.puntaje.toFixed(2)} pts</p>
+                        </div>
+                    `;
+                    topPerformersContainer.appendChild(performerEl);
+                });
+            }
+            
+            function renderLowPerformers(performers) {
+                lowPerformersContainer.innerHTML = '';
+                if(performers.length === 0){
+                    lowPerformersContainer.innerHTML = '<p class="text-gray-500">No hay alertas de bajo rendimiento.</p>';
+                    return;
+                }
+                performers.forEach(p => {
+                    const alertEl = document.createElement('div');
+                    alertEl.className = 'bg-red-100 border-l-4 border-red-500 text-red-700 p-3 rounded';
+                    alertEl.innerHTML = `
+                        <p class="font-bold">${p.name} (${p.area})</p>
+                        <p class="text-sm">Puntaje bajo: ${p.puntaje.toFixed(2)} pts. Requiere atención.</p>
+                    `;
+                    lowPerformersContainer.appendChild(alertEl);
+                });
+            }
+
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            monthFilter.value = currentMonth;
+            monthFilter.addEventListener('change', fetchDataAndRender);
+            
+            fetchDataAndRender();
+        });
+    </script>
+</body>
+</html>

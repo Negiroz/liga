@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liga SIGMA de Campeones - Closers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f4f9; }
+        .header-font { font-family: 'Oswald', sans-serif; }
+        .scoreboard-header { text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .nav-button { transition: all 0.3s ease; }
+        .nav-button.active { background-color: #fbbf24; color: #1f2937; font-weight: bold; }
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 40; display: flex; justify-content: center; align-items: center; }
+        .modal-content { z-index: 50; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        .data-entry-table input, .edit-table input { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #4b5563; background-color: #374151; color: #e5e7eb; text-align: center; }
+        .edit-table input { background-color: #e5e7eb; color: #1f2937; }
+        .data-entry-table input:focus, .edit-table input:focus { outline: none; ring: 2px; border-color: #fbbf24; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .closer-photo { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
+        .roster-photo { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+        .analysis-card { background-color: #ffffff; border: 1px solid #e5e7eb; border-left: 5px solid #3b82f6; }
+        .points-cell { color: #1d4ed8; font-weight: bold; }
+        .mobile-card-photo { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 3px solid #fbbf24; }
+        .compact-table th, .compact-table td { padding: 0.5rem 0.4rem; font-size: 0.8rem; }
+        .compact-table th { white-space: normal; line-height: 1.2; }
+        .info-icon { cursor: pointer; display: inline-block; margin-left: 4px; width: 14px; height: 14px; background-color: #9ca3af; color: white; border-radius: 50%; font-size: 10px; line-height: 14px; text-align: center; font-style: normal; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="app" class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-6 relative">
+             <a href="portal.html" class="absolute left-0 top-1/2 -translate-y-1/2 bg-gray-200 text-gray-700 hover:bg-gray-300 font-semibold py-2 px-4 rounded-lg transition-colors">
+                &larr; Volver al Portal
+            </a>
+            <h1 class="text-5xl md:text-6xl font-bold text-blue-800 header-font scoreboard-header">LIGA SIGMA DE CAMPEONES</h1>
+            <p class="text-gray-600 text-xl header-font flex items-center justify-center">
+    Rendimiento de <span class="font-bold text-blue-700 mx-2">Closers</span>
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+</p>
+        </header>
+
+        <nav class="flex justify-center mb-8 bg-gray-200 rounded-lg p-1 shadow">
+            <button id="nav-standings" class="nav-button active w-1/5 p-3 rounded-md">Posiciones</button>
+            <button id="nav-data-entry" class="nav-button w-1/5 p-3 rounded-md">Carga</button>
+            <button id="nav-edit-entries" class="nav-button w-1/5 p-3 rounded-md">Editar</button>
+            <button id="nav-roster" class="nav-button w-1/5 p-3 rounded-md">Roster</button>
+            <button id="nav-mobile" class="nav-button w-1/5 p-3 rounded-md">Ranking</button>
+        </nav>
+
+        <main>
+            <div id="standings-view">
+                <section id="standings" class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex flex-wrap justify-between items-center mb-4 border-b border-gray-200 pb-3">
+                         <h2 class="text-3xl font-bold text-gray-800 header-font">Standings del Mes</h2>
+                         <div class="flex items-center space-x-4">
+                            <div>
+                                <label for="cierre-meta-input-standings" class="text-sm mr-2 font-semibold">Cuota de Cierres:</label>
+                                <input type="number" id="cierre-meta-input-standings" class="bg-gray-200 p-2 rounded border border-gray-300 w-28" required value="40">
+                            </div>
+                            <div>
+                                <label for="most-expensive-plan-standings" class="text-sm mr-2 font-semibold">Plan Más Caro ($):</label>
+                                <input type="number" id="most-expensive-plan-standings" class="bg-gray-200 p-2 rounded border border-gray-300 w-28" required value="30">
+                            </div>
+                            <div>
+                                 <label for="month-filter" class="text-sm mr-2 font-semibold">Mes:</label>
+                                 <input type="month" id="month-filter" class="bg-gray-200 p-2 rounded border border-gray-300">
+                             </div>
+                         </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table id="standings-table" class="w-full text-left compact-table">
+                            <thead class="bg-gray-700 text-white uppercase text-xs header-font">
+                                <tr>
+                                    <th class="p-2">Pos.</th>
+                                    <th class="p-2">Closer</th>
+                                    <th class="p-2 text-center">Cuota</th>
+                                    <th class="p-2 text-center">Real</th>
+                                    <th class="p-2 text-center">Tasa Cierre</th>
+                                    <th class="p-2 text-center points-cell">Puntos Cierre<i class="info-icon" data-kpi="cierre">?</i></th>
+                                    <th class="p-2 text-center">Prom.<br>Plan ($)</th>
+                                    <th class="p-2 text-center">% ARPU</th>
+                                    <th class="p-2 text-center points-cell">Puntos ARPU<i class="info-icon" data-kpi="arpu">?</i></th>
+                                    <th class="p-2 text-center">Eval.</th>
+                                    <th class="p-2 text-center">% Pitch</th>
+                                    <th class="p-2 text-center points-cell">Puntos Pitch<i class="info-icon" data-kpi="pitch">?</i></th>
+                                    <th class="p-2 text-center">Comp.</th>
+                                    <th class="p-2 text-center">% Act.</th>
+                                    <th class="p-2 text-center points-cell">Puntos Act.<i class="info-icon" data-kpi="actividad">?</i></th>
+                                    <th class="p-2 text-center font-bold">Puntos Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="standings-body"></tbody>
+                        </table>
+                        <div id="standings-loader" class="flex justify-center p-8"><div class="loader"></div></div>
+                    </div>
+                     <div class="mt-6 text-right">
+                        <button id="export-csv-btn-closers" class="bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700">Exportar a CSV</button>
+                    </div>
+                </section>
+                <section id="analysis-section" class="mt-8">
+                    <div class="text-center mb-6">
+                         <button id="generate-analysis-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full hover:bg-blue-700 transition-colors text-lg header-font shadow-lg">
+                            Generar Análisis Táctico
+                        </button>
+                    </div>
+                    <div id="analysis-loader" class="hidden justify-center p-8"><div class="loader"></div></div>
+                    <div id="analysis-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                 </section>
+            </div>
+            <div id="data-entry-view" class="hidden">
+                 <section class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex flex-wrap justify-between items-center mb-4 border-b border-gray-200 pb-3">
+                        <h2 class="text-3xl font-bold text-gray-800 header-font">Carga Masiva de Jugadas</h2>
+                        <div>
+                            <label for="entry-date" class="text-sm mr-2 font-semibold">Fecha:</label>
+                            <input type="date" id="entry-date" class="bg-gray-200 p-2 rounded border border-gray-300" required>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left data-entry-table">
+                            <thead class="bg-gray-700 text-white uppercase text-sm header-font">
+                                <tr>
+                                    <th class="p-3 min-w-[200px]">Closer</th>
+                                    <th class="p-3 text-center">Cierres</th>
+                                    <th class="p-3 text-center">Ingresos Totales ($)</th>
+                                    <th class="p-3 text-center">Calificación (1-5)</th>
+                                    <th class="p-3 text-center">Act. Asignadas</th>
+                                    <th class="p-3 text-center">Act. Completas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-entry-table-body"></tbody>
+                        </table>
+                        <div id="data-entry-loader" class="hidden justify-center p-8 bg-gray-800 rounded-b-lg"><div class="loader"></div></div>
+                    </div>
+                     <button id="save-all-btn" class="w-full mt-6 bg-green-600 text-white font-bold py-3 rounded-md hover:bg-green-700 transition-colors text-lg header-font">GUARDAR TODAS LAS JUGADAS</button>
+                </section>
+            </div>
+             <div id="roster-view" class="hidden">
+                <section id="admin-closers" class="bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto">
+                    <h2 class="text-2xl font-bold mb-4 border-b border-gray-200 pb-2 header-font">Roster de Closers</h2>
+                    <div class="space-y-3 mb-4" id="closers-list"></div>
+                    <div class="space-y-3 border-t pt-4 mt-4">
+                        <h3 class="text-xl header-font font-semibold">Añadir Nuevo Closer</h3>
+                        <input type="text" id="new-closer-name" placeholder="Nombre del nuevo Closer" class="w-full bg-gray-200 text-gray-800 p-2 rounded-md border border-gray-300">
+                        <input type="file" id="new-closer-photo" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        <button id="add-closer-btn" class="w-full bg-amber-400 text-gray-900 font-bold px-4 py-3 rounded-md hover:bg-amber-500">Añadir al Roster</button>
+                    </div>
+                </section>
+            </div>
+            <div id="edit-view" class="hidden">
+                <section class="bg-white p-6 rounded-lg shadow-lg">
+                    <h2 class="text-3xl font-bold text-gray-800 header-font mb-4">Editar Jugadas del Mes</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left compact-table edit-table">
+                             <thead class="bg-gray-700 text-white uppercase text-xs header-font">
+                                <tr>
+                                    <th class="p-2">Closer</th>
+                                    <th class="p-2">Fecha</th>
+                                    <th class="p-2 text-center">Cierres</th>
+                                    <th class="p-2 text-center">Ingresos</th>
+                                    <th class="p-2 text-center">Calificación</th>
+                                    <th class="p-2 text-center">Act. Asig.</th>
+                                    <th class="p-2 text-center">Act. Comp.</th>
+                                </tr>
+                            </thead>
+                            <tbody id="edit-entries-body"></tbody>
+                        </table>
+                        <div id="edit-loader" class="hidden justify-center p-8"><div class="loader"></div></div>
+                    </div>
+                    <button id="save-updates-btn" class="w-full mt-6 bg-purple-600 text-white font-bold py-3 rounded-md hover:bg-purple-700 transition-colors text-lg header-font">GUARDAR TODOS LOS CAMBIOS</button>
+                </section>
+            </div>
+            <div id="mobile-view" class="hidden">
+                 <section class="bg-white p-4 md:p-6 rounded-lg shadow-lg">
+                    <div class="text-center">
+                        <h2 class="text-3xl font-bold text-gray-800 header-font">Ranking de Puntos</h2>
+                        <h3 id="mobile-month-display" class="text-center text-gray-500 mb-6"></h3>
+                    </div>
+                    <div id="mobile-standings-container" class="space-y-4"></div>
+                    <div id="mobile-loader" class="hidden justify-center p-8"><div class="loader"></div></div>
+                    
+                    <div id="kpi-leaders-section" class="mt-8 pt-6 border-t">
+                         <h2 class="text-2xl font-bold text-gray-800 header-font text-center mb-4">Líderes del Mes por KPI</h2>
+                         <div id="kpi-leaders-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                         </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    <div id="notification-modal" class="modal-backdrop hidden">
+        <div class="modal-content bg-white text-gray-900 rounded-lg shadow-xl p-8 w-11/12 md:w-1/3 text-center">
+            <p id="notification-message" class="text-lg mb-6"></p>
+            <button id="close-notification-btn" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">Entendido</button>
+        </div>
+    </div>
+    <div id="explanation-modal" class="modal-backdrop hidden">
+        <div class="modal-content bg-white text-gray-900 rounded-lg shadow-xl p-6 w-11/12 md:w-1/3">
+            <h3 id="explanation-title" class="text-xl font-bold mb-4 header-font"></h3>
+            <p id="explanation-text" class="text-gray-700 mb-6 whitespace-pre-wrap"></p>
+            <button id="close-explanation-btn" class="w-full bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">Cerrar</button>
+        </div>
+    </div>
+    <script>
+        const API_BASE_URL = 'api/';
+        const CLOSERS_API = API_BASE_URL + 'closers.php';
+        const KPI_API = API_BASE_URL + 'kpi.php';
+        const ANALYSIS_API = API_BASE_URL + 'generate_analysis.php';
+
+        const navStandings = document.getElementById('nav-standings');
+        const navDataEntry = document.getElementById('nav-data-entry');
+        const navEditEntries = document.getElementById('nav-edit-entries');
+        const navMobile = document.getElementById('nav-mobile');
+        const navRoster = document.getElementById('nav-roster');
+        const standingsView = document.getElementById('standings-view');
+        const dataEntryView = document.getElementById('data-entry-view');
+        const editView = document.getElementById('edit-view');
+        const mobileView = document.getElementById('mobile-view');
+        const rosterView = document.getElementById('roster-view');
+        const addCloserBtn = document.getElementById('add-closer-btn');
+        const newCloserNameInput = document.getElementById('new-closer-name');
+        const newCloserPhotoInput = document.getElementById('new-closer-photo');
+        const closersListDiv = document.getElementById('closers-list');
+        const monthFilter = document.getElementById('month-filter');
+        const standingsBody = document.getElementById('standings-body');
+        const standingsLoader = document.getElementById('standings-loader');
+        const mobileStandingsContainer = document.getElementById('mobile-standings-container');
+        const kpiLeadersContainer = document.getElementById('kpi-leaders-container');
+        const mobileLoader = document.getElementById('mobile-loader');
+        const mobileMonthDisplay = document.getElementById('mobile-month-display');
+        const dataEntryTableBody = document.getElementById('data-entry-table-body');
+        const dataEntryLoader = document.getElementById('data-entry-loader');
+        const editEntriesBody = document.getElementById('edit-entries-body');
+        const editLoader = document.getElementById('edit-loader');
+        const saveAllBtn = document.getElementById('save-all-btn');
+        const saveUpdatesBtn = document.getElementById('save-updates-btn');
+        const generateAnalysisBtn = document.getElementById('generate-analysis-btn');
+        const analysisContainer = document.getElementById('analysis-container');
+        const analysisLoader = document.getElementById('analysis-loader');
+        const notificationModal = document.getElementById('notification-modal');
+        const notificationMessage = document.getElementById('notification-message');
+        const closeNotificationBtn = document.getElementById('close-notification-btn');
+        const explanationModal = document.getElementById('explanation-modal');
+        const closeExplanationBtn = document.getElementById('close-explanation-btn');
+        const explanationTitle = document.getElementById('explanation-title');
+        const explanationText = document.getElementById('explanation-text');
+
+        let closersCache = [];
+        const placeholderPhoto = `https://placehold.co/40x40/64748b/ffffff?text=CS`;
+        
+        document.addEventListener('DOMContentLoaded', initApp);
+
+        async function initApp() { 
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('entry-date').value = today;
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            monthFilter.value = currentMonth;
+            
+            navStandings.addEventListener('click', () => showView('standings'));
+            navDataEntry.addEventListener('click', () => showView('data-entry'));
+            navEditEntries.addEventListener('click', () => showView('edit'));
+            navMobile.addEventListener('click', () => showView('mobile'));
+            navRoster.addEventListener('click', () => showView('roster'));
+            addCloserBtn.addEventListener('click', addCloser);
+            saveAllBtn.addEventListener('click', saveAllKpiEntries);
+            saveUpdatesBtn.addEventListener('click', saveAllUpdates);
+            monthFilter.addEventListener('change', () => {
+                renderAllViews();
+                analysisContainer.innerHTML = '';
+            });
+            document.getElementById('most-expensive-plan-standings').addEventListener('change', renderAllViews);
+            document.getElementById('cierre-meta-input-standings').addEventListener('change', renderAllViews);
+            generateAnalysisBtn.addEventListener('click', generatePlayerByPlayerAnalysis);
+            closeNotificationBtn.addEventListener('click', () => notificationModal.classList.add('hidden'));
+            closeExplanationBtn.addEventListener('click', () => explanationModal.classList.add('hidden'));
+            
+            document.getElementById('export-csv-btn-closers').addEventListener('click', () => {
+                exportTableToCSV('standings-table', 'standings_closers.csv');
+            });
+            
+            await fetchClosers(); 
+            showView('standings');
+        }
+
+        function showView(viewName) {
+            [standingsView, dataEntryView, editView, mobileView, rosterView].forEach(v => v.classList.add('hidden'));
+            [navStandings, navDataEntry, navEditEntries, navMobile, navRoster].forEach(b => b.classList.remove('active'));
+
+            const viewMap = {
+                'standings': { view: standingsView, nav: navStandings, render: renderStandings },
+                'data-entry': { view: dataEntryView, nav: navDataEntry, render: renderDataEntryTable },
+                'edit': { view: editView, nav: navEditEntries, render: renderEditTable },
+                'mobile': { view: mobileView, nav: navMobile, render: renderMobileStandings },
+                'roster': { view: rosterView, nav: navRoster, render: renderRosterList },
+            };
+            
+            const selected = viewMap[viewName];
+            if(selected) {
+                selected.view.classList.remove('hidden');
+                selected.nav.classList.add('active');
+                selected.render();
+            }
+        }
+        
+        function renderAllViews(){
+            renderStandings();
+            renderMobileStandings();
+        }
+
+        function showNotification(message) {
+            notificationMessage.textContent = message;
+            notificationModal.classList.remove('hidden');
+        }
+        
+        async function showExplanation(kpi) {
+            const standings = await getStandingsData();
+            if(!standings || standings.length === 0) {
+                return showNotification("No hay datos del líder para mostrar un ejemplo.");
+            }
+            const leader = standings[0];
+            const cierreMeta = parseFloat(document.getElementById('cierre-meta-input-standings').value) || 1; 
+            const mostExpensivePlan = parseFloat(document.getElementById('most-expensive-plan-standings').value) || 1;
+
+            const explanations = {
+                cierre: {
+                    title: "Puntos de Cierre (40pts)",
+                    text: `Se calcula multiplicando el porcentaje de la Tasa de Cierre sobre la Meta con el valor en puntos del KPI (40).\n\nFórmula: (Real / Cuota) * 40\n\nEjemplo con ${leader.name}:\n(${leader.cierres} / ${cierreMeta}) * 40 = ${leader.tc_points.toFixed(1)} puntos.`
+                },
+                arpu: {
+                    title: "Puntos ARPU (30pts)",
+                    text: `Se calcula dividiendo el Valor Promedio del Plan (Prom. Plan) entre el Plan Más Caro para obtener un porcentaje. Ese porcentaje se multiplica por el valor en puntos del KPI (30).\n\nFórmula: (Prom. Plan / Plan Más Caro) * 30\n\nEjemplo con ${leader.name}:\n($${leader.arpu.toFixed(2)} / $${mostExpensivePlan}) * 30 = ${leader.arpu_points.toFixed(1)} puntos.`
+                },
+                pitch: {
+                    title: "Puntos Pitch (10pts)",
+                    text: `Se calcula promediando todas las evaluaciones de Pitch (escala 1-5), se divide entre 5 para obtener un porcentaje y se multiplica por el valor del KPI (10).\n\nFórmula: (Prom. Evaluación / 5) * 10\n\nEjemplo con ${leader.name}:\n(${leader.qual_avg.toFixed(1)} / 5) * 10 = ${leader.qual_points.toFixed(1)} puntos.`
+                },
+                actividad: {
+                    title: "Puntos Actividad (20pts)",
+                    text: `Resulta del porcentaje de cumplimiento de las actividades (Completadas / Asignadas), multiplicado por el valor del KPI (20).\n\nFórmula: (Completadas / Asignadas) * 20\n\nEjemplo con ${leader.name}:\n(${leader.actCompletadas} / ${leader.actAsignadas}) * 20 = ${leader.act_points.toFixed(1)} puntos.`
+                }
+            };
+            const data = explanations[kpi];
+            if(data) {
+                explanationTitle.textContent = data.title;
+                explanationText.textContent = data.text;
+                explanationModal.classList.remove('hidden');
+            }
+        }
+
+        function resetAddCloserForm() {
+            newCloserNameInput.value = '';
+            newCloserPhotoInput.value = '';
+            addCloserBtn.disabled = false;
+            addCloserBtn.textContent = 'Añadir al Roster';
+        }
+
+        async function addCloser() {
+            const name = newCloserNameInput.value.trim();
+            const photoFile = newCloserPhotoInput.files[0];
+            if (!name) return showNotification("El nombre del Closer no puede estar vacío.");
+            if (photoFile && photoFile.size > 500 * 1024) return showNotification("Error: La imagen es demasiado grande (max 500KB).");
+            
+            addCloserBtn.disabled = true;
+            addCloserBtn.textContent = 'Guardando...';
+
+            const formData = new FormData();
+            formData.append('name', name);
+            if (photoFile) {
+                formData.append('photo', photoFile);
+            }
+
+            try {
+                const response = await fetch(CLOSERS_API, {
+                    method: 'POST',
+                    body: formData // FormData sets its own Content-Type header
+                });
+                const result = await response.json();
+                if(result.error) throw new Error(result.error);
+                showNotification(`Closer "${name}" añadido.`);
+                fetchClosers();
+            } catch (error) {
+                console.error("Error añadiendo closer:", error);
+                showNotification("Error al guardar el closer: " + error.message);
+            } finally {
+                resetAddCloserForm();
+            }
+        }
+        
+        async function deleteCloser(id) {
+            try {
+                const response = await fetch(`${CLOSERS_API}?id=${id}`, { method: 'DELETE' });
+                const result = await response.json();
+                if(result.error) throw new Error(result.error);
+                showNotification(`Closer eliminado.`);
+                fetchClosers();
+            } catch (error) {
+                console.error("Error eliminando closer:", error);
+                showNotification("Error al eliminar.");
+            }
+        }
+        
+        async function fetchClosers() {
+             try {
+                const response = await fetch(CLOSERS_API);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                closersCache = await response.json();
+                renderRosterList();
+                renderDataEntryTable();
+            } catch(error){
+                console.error("Failed to fetch closers", error);
+                showNotification("No se pudo cargar la lista de closers desde el servidor.");
+            }
+        }
+        
+        function renderRosterList() {
+            closersListDiv.innerHTML = closersCache.length === 0 ? `<p class="text-gray-500">Aún no hay closers.</p>` : '';
+            closersCache.forEach(closer => {
+                const el = document.createElement('div');
+                el.className = 'flex justify-between items-center bg-gray-200 p-2 rounded';
+                el.innerHTML = `
+                    <div class="flex items-center">
+                        <img src="${closer.photoUrl || placeholderPhoto}" alt="Foto" class="roster-photo mr-3">
+                        <span class="font-semibold">${closer.name}</span>
+                    </div>
+                    <button data-id="${closer.id}" class="delete-closer-btn text-red-600 hover:text-red-800 text-xs font-bold">ELIMINAR</button>
+                `;
+                closersListDiv.appendChild(el);
+            });
+            document.querySelectorAll('.delete-closer-btn').forEach(btn => btn.addEventListener('click', (e) => deleteCloser(e.target.dataset.id)));
+        }
+
+        function renderDataEntryTable() {
+            dataEntryLoader.style.display = 'flex';
+            dataEntryTableBody.innerHTML = '';
+            if (closersCache.length === 0) {
+                dataEntryTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-300">Añade un Closer para empezar.</td></tr>`;
+                dataEntryLoader.style.display = 'none';
+                return;
+            }
+            try {
+                closersCache.forEach(closer => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-700';
+                    row.dataset.closerId = closer.id;
+                    row.innerHTML = `
+                        <td class="p-2 text-white font-semibold flex items-center min-w-[200px]">
+                             <img src="${closer.photoUrl || placeholderPhoto}" alt="Foto" class="roster-photo mr-2"><span>${closer.name}</span>
+                        </td>
+                        <td><input type="number" min="0" class="kpi-input-cierres" placeholder="0"></td>
+                        <td><input type="number" min="0" step="0.01" class="kpi-input-ingresos" placeholder="0.00"></td>
+                        <td><input type="number" min="1" max="5" step="0.1" class="kpi-input-calificacion" placeholder="5"></td>
+                        <td><input type="number" min="0" class="kpi-input-act-asignadas" placeholder="0"></td>
+                        <td><input type="number" min="0" class="kpi-input-act-completadas" placeholder="0"></td>
+                    `;
+                    dataEntryTableBody.appendChild(row);
+                });
+            } catch(e) {
+                console.error("Error rendering data entry table", e);
+            } finally {
+                dataEntryLoader.style.display = 'none';
+            }
+        }
+
+        async function saveAllKpiEntries() {
+            const date = document.getElementById('entry-date').value;
+            if (!date) return showNotification("Selecciona una fecha.");
+            const rows = document.querySelectorAll('#data-entry-table-body tr');
+            const entriesToSave = [];
+            
+            for (const row of rows) {
+                const entry = {
+                    closerId: row.dataset.closerId, date: date,
+                    oportunidadesAsignadas: 0,
+                    cierresLogrados: parseInt(row.querySelector('.kpi-input-cierres').value || 0),
+                    ingresosTotales: parseFloat(row.querySelector('.kpi-input-ingresos').value || 0),
+                    calificacionPitch: parseFloat(row.querySelector('.kpi-input-calificacion').value || 0),
+                    actividadesAsignadas: parseInt(row.querySelector('.kpi-input-act-asignadas').value || 0),
+                    actividadesCompletadas: parseInt(row.querySelector('.kpi-input-act-completadas').value || 0)
+                };
+                if (entry.actividadesAsignadas === 0 && entry.cierresLogrados === 0) continue;
+                if (entry.actividadesCompletadas > entry.actividadesAsignadas) {
+                    return showNotification(`Error de validación para el closer.`);
+                }
+                entriesToSave.push(entry);
+            }
+            
+            if (entriesToSave.length === 0) return showNotification("No hay jugadas para guardar.");
+            
+            try {
+                 const response = await fetch(KPI_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(entriesToSave)
+                });
+                const result = await response.json();
+                if(result.error) throw new Error(result.error);
+                showNotification(result.message);
+                renderDataEntryTable();
+                renderAllViews();
+            } catch (error) {
+                console.error("Error guardando jugadas:", error);
+                showNotification("Ocurrió un error al guardar.");
+            }
+        }
+        
+        async function getStandingsData() {
+            const month = monthFilter.value;
+            const mostExpensivePlan = parseFloat(document.getElementById('most-expensive-plan-standings').value) || 1;
+            const cierreMeta = parseFloat(document.getElementById('cierre-meta-input-standings').value) || 1;
+            
+            const aggregatedData = {};
+            closersCache.forEach(c => {
+                aggregatedData[c.id] = { name: c.name, photoUrl: c.photoUrl, cierres: 0, ingresos: 0, calificaciones: [], actAsignadas: 0, actCompletadas: 0 };
+            });
+            
+            const response = await fetch(`${KPI_API}?month=${month}`);
+            const kpiEntries = await response.json();
+            
+            if(Array.isArray(kpiEntries)) {
+                kpiEntries.forEach(data => {
+                    if(aggregatedData[data.closerId]) {
+                        const closer = aggregatedData[data.closerId];
+                        closer.cierres += parseInt(data.cierresLogrados);
+                        closer.ingresos += parseFloat(data.ingresosTotales);
+                        if(parseFloat(data.calificacionPitch) > 0) closer.calificaciones.push(parseFloat(data.calificacionPitch));
+                        closer.actAsignadas += parseInt(data.actividadesAsignadas);
+                        closer.actCompletadas += parseInt(data.actividadesCompletadas);
+                    }
+                });
+            }
+            
+            const finalStandings = Object.values(aggregatedData).map(closer => {
+                const tc = (closer.cierres / cierreMeta) * 100;
+                const arpu = closer.cierres > 0 ? closer.ingresos / closer.cierres : 0;
+                const qual_avg = closer.calificaciones.length > 0 ? closer.calificaciones.reduce((a, b) => a + b, 0) / closer.calificaciones.length : 0;
+                const act_percent = closer.actAsignadas > 0 ? (closer.actCompletadas / closer.actAsignadas) * 100 : 0;
+                const arpu_percent = (arpu / mostExpensivePlan) * 100;
+                const qual_percent = (qual_avg / 5) * 100;
+
+                const tc_points = (closer.cierres / cierreMeta) * 40;
+                const arpu_points = (arpu / mostExpensivePlan) * 30;
+                const qual_points = (qual_avg / 5) * 10;
+                const act_points = (act_percent / 100) * 20;
+                
+                const puntaje = tc_points + arpu_points + qual_points + act_points;
+
+                return { 
+                    ...closer, tc, arpu, qual_avg, act_percent, arpu_percent, qual_percent,
+                    puntaje, tc_points, arpu_points, qual_points, act_points
+                };
+            }).sort((a, b) => b.puntaje - a.puntaje);
+
+            return finalStandings;
+        }
+
+        async function renderStandings() {
+            standingsLoader.style.display = 'flex';
+            standingsBody.innerHTML = '';
+            try {
+                const finalStandings = await getStandingsData();
+                const cierreMeta = parseFloat(document.getElementById('cierre-meta-input-standings').value) || 1;
+
+                if (finalStandings.length === 0) {
+                     standingsBody.innerHTML = `<tr><td colspan="16" class="text-center p-8 text-gray-500">No hay datos para este mes.</td></tr>`;
+                } else {
+                    finalStandings.forEach((s, index) => {
+                        const row = document.createElement('tr');
+                        row.className = 'hover:bg-gray-50 text-center text-sm';
+                        row.innerHTML = `
+                            <td class="p-2 font-bold">${index + 1}</td>
+                            <td class="p-2 font-semibold text-left"><div class="flex items-center"><img src="${s.photoUrl || placeholderPhoto}" alt="${s.name}" class="closer-photo mr-4"><span>${s.name}</span></div></td>
+                            <td class="p-2">${cierreMeta}</td>
+                            <td class="p-2">${s.cierres}</td>
+                            <td class="p-2 font-bold bg-gray-100">${s.tc.toFixed(1)}%</td>
+                            <td class="p-2 points-cell border-r border-gray-300">${s.tc_points.toFixed(1)}</td>
+                            <td class="p-2">$${s.arpu.toFixed(2)}</td>
+                            <td class="p-2 font-bold bg-gray-100">${s.arpu_percent.toFixed(1)}%</td>
+                            <td class="p-2 points-cell border-r border-gray-300">${s.arpu_points.toFixed(1)}</td>
+                            <td class="p-2">${s.qual_avg.toFixed(1)}</td>
+                            <td class="p-2 font-bold bg-gray-100">${s.qual_percent.toFixed(1)}%</td>
+                            <td class="p-2 points-cell border-r border-gray-300">${s.qual_points.toFixed(1)}</td>
+                            <td class="p-2">${s.actCompletadas}</td>
+                            <td class="p-2 font-bold bg-gray-100">${s.act_percent.toFixed(1)}%</td>
+                            <td class="p-2 points-cell border-r border-gray-300">${s.act_points.toFixed(1)}</td>
+                            <td class="p-2 font-bold text-lg border-l border-gray-300">${s.puntaje.toFixed(2)}</td>
+                        `;
+                        standingsBody.appendChild(row);
+                    });
+                }
+                
+                document.querySelectorAll('.info-icon').forEach(icon => {
+                    icon.addEventListener('click', (e) => {
+                         e.stopPropagation();
+                         showExplanation(e.target.dataset.kpi)
+                    });
+                });
+
+            } catch (error) {
+                console.error("Error al renderizar standings:", error);
+                standingsBody.innerHTML = `<tr><td colspan="16" class="text-center p-8 text-red-500">Error al cargar datos.</td></tr>`;
+            } finally {
+                standingsLoader.style.display = 'none';
+            }
+        }
+        
+        async function renderMobileStandings() {
+            mobileLoader.style.display = 'flex';
+            mobileStandingsContainer.innerHTML = '';
+            kpiLeadersContainer.innerHTML = '';
+            
+            const monthDate = new Date(monthFilter.value + '-02');
+            mobileMonthDisplay.textContent = monthDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
+            
+            try {
+                const finalStandings = await getStandingsData();
+                 if (finalStandings.length === 0) {
+                     mobileStandingsContainer.innerHTML = `<p class="text-center text-gray-500">No hay datos para este mes.</p>`;
+                } else {
+                    finalStandings.forEach((s, index) => {
+                        const card = document.createElement('div');
+                        card.className = 'flex items-center bg-gray-50 p-3 rounded-lg shadow-md';
+                        card.innerHTML = `
+                            <span class="text-2xl font-bold w-10 text-center text-gray-500">${index + 1}</span>
+                            <img src="${s.photoUrl || placeholderPhoto}" alt="${s.name}" class="mobile-card-photo mx-4">
+                            <div class="flex-grow">
+                                <p class="text-lg font-bold text-gray-800">${s.name}</p>
+                            </div>
+                            <div class="text-2xl font-bold text-blue-700 header-font text-right">
+                                <span>${s.puntaje.toFixed(2)}</span>
+                                <span class="text-sm font-normal text-gray-500 block -mt-1">pts</span>
+                            </div>
+                        `;
+                        mobileStandingsContainer.appendChild(card);
+                    });
+
+                    // Render KPI Leaders
+                    const leaders = {
+                        'Mejor Cerrador': [...finalStandings].sort((a,b) => b.tc_points - a.tc_points)[0],
+                        'Mejor Productor': [...finalStandings].sort((a,b) => b.arpu_points - a.arpu_points)[0],
+                        'Mejor Comunicador': [...finalStandings].sort((a,b) => b.qual_points - a.qual_points)[0],
+                        'Máquina de Tareas': [...finalStandings].sort((a,b) => b.act_points - a.act_points)[0]
+                    };
+                    
+                    for(const [title, leader] of Object.entries(leaders)){
+                        if(leader && leader.puntaje > 0) {
+                             const leaderCard = document.createElement('div');
+                             leaderCard.className = 'bg-white p-3 rounded-lg shadow-md';
+                             leaderCard.innerHTML = `
+                                <h4 class="text-sm font-bold text-center text-blue-800 header-font">${title}</h4>
+                                <div class="flex items-center mt-2">
+                                    <img src="${leader.photoUrl || placeholderPhoto}" alt="${leader.name}" class="closer-photo mr-3">
+                                    <span class="font-semibold text-gray-700">${leader.name}</span>
+                                </div>
+                             `;
+                             kpiLeadersContainer.appendChild(leaderCard);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Error al renderizar ranking móvil:", error);
+                mobileStandingsContainer.innerHTML = `<p class="text-center text-red-500">Error al cargar el ranking.</p>`;
+            } finally {
+                mobileLoader.style.display = 'none';
+            }
+        }
+
+        async function renderEditTable() {
+            editLoader.style.display = 'flex';
+            editEntriesBody.innerHTML = '';
+            try {
+                const month = monthFilter.value;
+                const response = await fetch(`${KPI_API}?month=${month}`);
+                const kpiEntries = await response.json();
+                
+                if(!kpiEntries || kpiEntries.length === 0) {
+                    editEntriesBody.innerHTML = `<tr><td colspan="7" class="text-center p-8">No hay jugadas para editar en este mes.</td></tr>`;
+                    return;
+                }
+                
+                kpiEntries.sort((a,b) => new Date(a.date) - new Date(b.date) || a.closerName.localeCompare(b.closerName));
+
+                kpiEntries.forEach(data => {
+                    const closer = closersCache.find(c => c.id == data.closerId);
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-100 text-sm';
+                    row.dataset.id = data.id;
+                    row.innerHTML = `
+                        <td class="p-2 font-semibold text-left"><div class="flex items-center"><img src="${closer?.photoUrl || placeholderPhoto}" alt="${closer?.name}" class="roster-photo mr-2"><span>${data.closerName}</span></div></td>
+                        <td class="p-2 text-center">${data.date}</td>
+                        <td class="p-2"><input type="number" class="edit-cierres" value="${data.cierresLogrados}"></td>
+                        <td class="p-2"><input type="number" step="0.01" class="edit-ingresos" value="${data.ingresosTotales}"></td>
+                        <td class="p-2"><input type="number" step="0.1" class="edit-calificacion" value="${data.calificacionPitch}"></td>
+                        <td class="p-2"><input type="number" class="edit-act-asignadas" value="${data.actividadesAsignadas}"></td>
+                        <td class="p-2"><input type="number" class="edit-act-completadas" value="${data.actividadesCompletadas}"></td>
+                    `;
+                    editEntriesBody.appendChild(row);
+                });
+
+            } catch(e) {
+                console.error("Error rendering edit table", e);
+                editEntriesBody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-red-500">Error al cargar la tabla de edición.</td></tr>`;
+            } finally {
+                editLoader.style.display = 'none';
+            }
+        }
+
+        async function saveAllUpdates() {
+            const rows = document.querySelectorAll('#edit-entries-body tr');
+            if(rows.length === 0) return showNotification('No hay nada que guardar.');
+
+            saveUpdatesBtn.disabled = true;
+            saveUpdatesBtn.textContent = 'Guardando...';
+            
+            const updatesToSave = [];
+            for(const row of rows) {
+                 updatesToSave.push({
+                    id: row.dataset.id,
+                    oportunidadesAsignadas: 0,
+                    cierresLogrados: parseInt(row.querySelector('.edit-cierres').value || 0),
+                    ingresosTotales: parseFloat(row.querySelector('.edit-ingresos').value || 0),
+                    calificacionPitch: parseFloat(row.querySelector('.edit-calificacion').value || 0),
+                    actividadesAsignadas: parseInt(row.querySelector('.edit-act-asignadas').value || 0),
+                    actividadesCompletadas: parseInt(row.querySelector('.edit-act-completadas').value || 0),
+                });
+            }
+
+            try {
+                const response = await fetch(KPI_API, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatesToSave)
+                });
+                const result = await response.json();
+                if(result.error) throw new Error(result.error);
+                showNotification(result.message);
+                renderAllViews();
+            } catch (error) {
+                console.error("Error al guardar cambios:", error);
+                showNotification("Ocurrió un error al guardar los cambios.");
+            } finally {
+                 saveUpdatesBtn.disabled = false;
+                 saveUpdatesBtn.textContent = 'GUARDAR TODOS LOS CAMBIOS';
+            }
+        }
+
+        async function generatePlayerByPlayerAnalysis() {
+            analysisLoader.style.display = 'flex';
+            analysisContainer.innerHTML = '';
+            generateAnalysisBtn.disabled = true;
+
+            try {
+                const standings = await getStandingsData();
+                if (standings.length === 0) {
+                    showNotification("No hay datos en la tabla para analizar.");
+                    generateAnalysisBtn.disabled = false;
+                    analysisLoader.style.display = 'none';
+                    return;
+                }
+
+                let analysisPrompt = "Actúa como un analista deportivo experto y coach de rendimiento para la 'Liga SIGMA de Campeones'. Tu tono debe ser competitivo, directo y motivador. Proporciona un análisis táctico para CADA UNO de los siguientes jugadores. Para cada jugador, genera un título llamativo y un párrafo de análisis.\n\n";
+
+                for(let i = 0; i < standings.length; i++) {
+                    const player = standings[i];
+                    analysisPrompt += `JUGADOR ${i + 1}: ${player.name}\n`;
+                    analysisPrompt += `ESTADÍSTICAS: Puntos Cierre=${player.tc_points.toFixed(1)}, Puntos ARPU=${player.arpu_points.toFixed(1)}, Puntos Pitch=${player.qual_points.toFixed(1)}, Puntos Actividad=${player.act_points.toFixed(1)}, PUNTAJE TOTAL=${player.puntaje.toFixed(2)}\n`;
+
+                    if (i === 0) {
+                        if (standings.length > 1) {
+                            const rival = standings[i + 1];
+                            analysisPrompt += `TAREA: Analiza cómo ${player.name} puede MANTENER el liderato. Compara sus fortalezas y debilidades (basado en los puntos de cada KPI) con su perseguidor más cercano, ${rival.name}.\n\n`;
+                        } else {
+                            analysisPrompt += `TAREA: Analiza la clave del dominio de ${player.name} y qué necesita para seguir mejorando su propia marca.\n\n`;
+                        }
+                    } else {
+                        const rival = standings[i - 1];
+                        analysisPrompt += `TAREA: Analiza qué necesita ${player.name} para SUPERAR a ${rival.name} (Puntaje Total: ${rival.puntaje.toFixed(2)}). Especifica en qué KPI (donde tenga menos puntos) debe enfocarse y por qué para cerrar la brecha.\n\n`;
+                    }
+                }
+                analysisPrompt += "Devuelve el análisis para cada jugador separado por '---'. Formato: ### TÍTULO\nAnálisis...";
+                
+                const response = await fetch(ANALYSIS_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: analysisPrompt })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Error del servidor: ${response.status}`);
+                }
+                
+                const result = await response.json();
+
+                if (result.candidates && result.candidates[0].content.parts[0].text) {
+                    const analysisText = result.candidates[0].content.parts[0].text;
+                    const articles = analysisText.split('---');
+                    
+                    analysisContainer.innerHTML = standings.map((player, index) => {
+                        const articleContent = articles[index] || "No se pudo generar análisis para este jugador.";
+                        const formattedContent = articleContent.trim().replace(/### (.*)/, '<h3 class="text-xl font-bold mb-2 header-font text-gray-800">$1</h3>');
+                        
+                        return `
+                            <div class="analysis-card p-4 rounded-lg shadow">
+                                <div class="flex items-center mb-3">
+                                    <img src="${player.photoUrl || placeholderPhoto}" alt="${player.name}" class="closer-photo mr-4">
+                                    <span class="text-lg font-semibold header-font">${player.name}</span>
+                                </div>
+                                <div>${formattedContent}</div>
+                            </div>
+                        `;
+                    }).join('');
+
+                } else {
+                    throw new Error("La respuesta de la IA no tuvo el formato esperado.");
+                }
+
+            } catch (error) {
+                console.error("Error generando análisis:", error);
+                showNotification(`Ocurrió un error al generar el análisis: ${error.message}`);
+            } finally {
+                analysisLoader.style.display = 'none';
+                generateAnalysisBtn.disabled = false;
+            }
+        }
+        
+        function exportTableToCSV(tableId, filename) {
+            let csv = [];
+            const rows = document.querySelectorAll(`#${tableId} tr`);
+            
+            for (const row of rows) {
+                const cols = row.querySelectorAll("td, th");
+                const rowData = [];
+                for (const col of cols) {
+                    let text = col.innerText.replace(/(\r\n|\n|\r)/gm, " ").replace(/,/g, "");
+                    rowData.push(`"${text}"`);
+                }
+                csv.push(rowData.join(","));
+            }
+
+            const csvFile = new Blob([csv.join("\n")], { type: "text/csv" });
+            const downloadLink = document.createElement("a");
+            downloadLink.download = filename;
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+            downloadLink.style.display = "none";
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+
+    </script>
+</body>
+</html>
